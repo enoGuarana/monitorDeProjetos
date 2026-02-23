@@ -1,0 +1,67 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import os
+
+# 1. Configuração da Página
+st.set_page_config(page_title="Dashboard Ministerial", layout="wide", page_icon="🏛️")
+
+# 2. Função de carregamento inteligente (Lê Excel ou CSV)
+@st.cache_data(ttl=2)
+def load_data():
+    # Lista de possíveis nomes de arquivos gerados pelo Excel Web
+    arquivos_possiveis = ["dados.xlsx.xlsx", "dados.xlsx", "dados.csv"]
+    
+    df = None
+    for nome in arquivos_possiveis:
+        if os.path.exists(nome):
+            try:
+                if nome.endswith('.csv'):
+                    df = pd.read_csv(nome)
+                else:
+                    df = pd.read_excel(nome)
+                break # Sai do loop se conseguir ler um arquivo
+            except Exception:
+                continue
+    
+    if df is not None:
+        # Tratamento das colunas conforme seu arquivo real
+        df['Progresso'] = pd.to_numeric(df['Progresso'], errors='coerce').fillna(0).astype(int)
+        df['Status'] = df['Status'].fillna('A definir')
+        return df
+    return None
+
+df = load_data()
+
+if df is not None:
+    st.title("🏛️ Monitoramento de Projetos Estratégicos")
+    st.markdown(f"**Arquivo carregado com sucesso**")
+
+    # 3. Sidebar com Filtros
+    st.sidebar.title("Filtros de Gestão")
+    status_opcoes = df['Status'].unique().tolist()
+    status_sel = st.sidebar.multiselect("Filtrar Status:", status_opcoes, default=status_opcoes)
+    
+    df_filtered = df[df['Status'].isin(status_sel)]
+
+    # 4. Indicadores Rápidos
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Projetos Ativos", len(df_filtered))
+    k2.metric("✅ Concluídos", len(df_filtered[df_filtered['Status'] == 'Concluído']))
+    k3.metric("🚨 Impedimentos", len(df_filtered[df_filtered['Status'] == 'Impedimento']))
+
+    # 5. Gráfico de Progresso
+    st.subheader("🚀 Evolução por Projeto")
+    fig = px.bar(
+        df_filtered, x='Projeto', y='Progresso', color='Status',
+        color_discrete_map={'Concluído': '#2ecc71', 'Em andamento': '#3498db', 'Impedimento': '#e74c3c'},
+        text_auto=True
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 6. Tabela Completa
+    st.subheader("📋 Detalhamento Técnico")
+    st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+else:
+    st.error("❌ Nenhum arquivo de dados encontrado (dados.xlsx ou dados.csv).")
+    st.info("Baixe a cópia do Excel Web para a pasta Downloads e mantenha o nome 'dados'.")
