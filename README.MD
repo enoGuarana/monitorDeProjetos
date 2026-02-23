@@ -34,3 +34,9 @@ Caso deseje rodar o projeto localmente:
 1. Clone o repositório:
    ```bash
    git clone [https://github.com/SEU-USUARIO/NOME-DO-REPOSIITORIO.git](https://github.com/SEU-USUARIO/NOME-DO-REPOSIITORIO.git)
+
+2. Instale as dependências:
+pip install -r requirements.txt
+
+3.Execute a aplicação:
+streamlit run monitoramento.py
